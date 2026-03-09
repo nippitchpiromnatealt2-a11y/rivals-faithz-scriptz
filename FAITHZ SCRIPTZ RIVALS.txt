@@ -1,26 +1,21 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
 
 local aimbotEnabled = false
 local espEnabled = false
-local attacking = false
 
 -------------------------------------------------
 -- GUI
 -------------------------------------------------
 
 local gui = Instance.new("ScreenGui")
-gui.Parent = player:WaitForChild("PlayerGui")
+gui.Name = "FaithScriptz"
 gui.ResetOnSpawn = false
-
-local UIS = game:GetService("UserInputService")
-
-local menuVisible = true
-
-
+gui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0,200,0,160)
@@ -53,10 +48,10 @@ end
 
 local aimbotBtn = makeButton("Aimbot: OFF",40)
 local espBtn = makeButton("ESP: OFF",80)
-local autowinBtn = makeButton("TP to nearest player",120)
+local tpBtn = makeButton("TP to nearest player",120)
 
 -------------------------------------------------
--- HELPER FUNCTIONS
+-- HELPER
 -------------------------------------------------
 
 local function getNearestPlayer()
@@ -64,17 +59,17 @@ local function getNearestPlayer()
 	local nearest
 	local dist = math.huge
 
-	local myChar = player.Character
-	if not myChar then return end
+	local char = player.Character
+	if not char then return end
 
-	local myRoot = myChar:FindFirstChild("HumanoidRootPart")
-	if not myRoot then return end
+	local root = char:FindFirstChild("HumanoidRootPart")
+	if not root then return end
 
 	for _,p in pairs(Players:GetPlayers()) do
 
 		if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
 
-			local d = (p.Character.HumanoidRootPart.Position - myRoot.Position).Magnitude
+			local d = (p.Character.HumanoidRootPart.Position - root.Position).Magnitude
 
 			if d < dist then
 				dist = d
@@ -100,9 +95,9 @@ local function getClosestEnemy()
 
 	for _,p in pairs(Players:GetPlayers()) do
 
-		if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+		if p ~= player and p.Character and p.Character:FindFirstChild("Head") then
 
-			local pos,visible = camera:WorldToViewportPoint(p.Character.HumanoidRootPart.Position)
+			local pos,visible = camera:WorldToViewportPoint(p.Character.Head.Position)
 
 			if visible then
 
@@ -145,86 +140,51 @@ end)
 -- ESP
 -------------------------------------------------
 
-local function updateESP()
+local function applyESP(char)
+
+	if char:FindFirstChild("FakeESP") then return end
+
+	local highlight = Instance.new("Highlight")
+	highlight.Name = "FakeESP"
+	highlight.FillColor = Color3.fromRGB(255,0,0)
+	highlight.OutlineColor = Color3.fromRGB(255,255,255)
+	highlight.Parent = char
+
+end
+
+local function removeESP(char)
+
+	local h = char:FindFirstChild("FakeESP")
+
+	if h then
+		h:Destroy()
+	end
+
+end
+
+RunService.RenderStepped:Connect(function()
 
 	for _,p in pairs(Players:GetPlayers()) do
 
 		if p ~= player and p.Character then
 
-			local existing = p.Character:FindFirstChild("FakeESP")
-
 			if espEnabled then
-
-				if not existing then
-
-					local h = Instance.new("Highlight")
-					h.Name = "FakeESP"
-					h.FillColor = Color3.fromRGB(255,0,0)
-					h.OutlineColor = Color3.fromRGB(255,255,255)
-					h.Parent = p.Character
-
-				end
-
+				applyESP(p.Character)
 			else
-
-				if existing then
-					existing:Destroy()
-				end
-
+				removeESP(p.Character)
 			end
 
 		end
 
 	end
 
-end
-
-task.spawn(function()
-
-	while true do
-		updateESP()
-		task.wait(1)
-	end
-
 end)
 
 -------------------------------------------------
--- AUTO WIN
+-- TELEPORT
 -------------------------------------------------
 
-
-
-
--------------------------------------------------
--- BUTTONS
--------------------------------------------------
-
-aimbotBtn.MouseButton1Click:Connect(function()
-
-	aimbotEnabled = not aimbotEnabled
-
-	if aimbotEnabled then
-		aimbotBtn.Text = "Aimbot: ON"
-	else
-		aimbotBtn.Text = "Aimbot: OFF"
-	end
-
-end)
-
-espBtn.MouseButton1Click:Connect(function()
-
-	espEnabled = not espEnabled
-
-	if espEnabled then
-		espBtn.Text = "ESP: ON"
-	else
-		espBtn.Text = "ESP: OFF"
-	end
-
-end)
-
-
-autowinBtn.MouseButton1Click:Connect(function()
+local function teleportNearest()
 
 	local target = getNearestPlayer()
 	if not target then return end
@@ -236,6 +196,60 @@ autowinBtn.MouseButton1Click:Connect(function()
 
 	if myRoot and targetRoot then
 		myRoot.CFrame = targetRoot.CFrame * CFrame.new(0,0,2)
+	end
+
+end
+
+-------------------------------------------------
+-- TOGGLES
+-------------------------------------------------
+
+local function toggleAimbot()
+
+	aimbotEnabled = not aimbotEnabled
+	aimbotBtn.Text = "Aimbot: "..(aimbotEnabled and "ON" or "OFF")
+
+end
+
+local function toggleESP()
+
+	espEnabled = not espEnabled
+	espBtn.Text = "ESP: "..(espEnabled and "ON" or "OFF")
+
+end
+
+-------------------------------------------------
+-- BUTTONS
+-------------------------------------------------
+
+aimbotBtn.MouseButton1Click:Connect(toggleAimbot)
+espBtn.MouseButton1Click:Connect(toggleESP)
+tpBtn.MouseButton1Click:Connect(teleportNearest)
+
+-------------------------------------------------
+-- KEYBINDS
+-------------------------------------------------
+
+UIS.InputBegan:Connect(function(input,gp)
+
+	if gp then return end
+
+	if input.KeyCode == Enum.KeyCode.A then
+		if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.RightControl) then
+			toggleAimbot()
+		end
+	end
+
+	if input.KeyCode == Enum.KeyCode.E then
+		if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.RightControl) then
+			toggleESP()
+		end
+	end
+
+	if input.KeyCode == Enum.KeyCode.T then
+		if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.RightControl) then
+			teleportNearest()
+		end
 	end
 
 end)
