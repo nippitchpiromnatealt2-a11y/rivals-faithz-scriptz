@@ -1,0 +1,241 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local camera = workspace.CurrentCamera
+
+local aimbotEnabled = false
+local espEnabled = false
+local attacking = false
+
+-------------------------------------------------
+-- GUI
+-------------------------------------------------
+
+local gui = Instance.new("ScreenGui")
+gui.Parent = player:WaitForChild("PlayerGui")
+gui.ResetOnSpawn = false
+
+local UIS = game:GetService("UserInputService")
+
+local menuVisible = true
+
+
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0,200,0,160)
+frame.Position = UDim2.new(0.1,0,0.2,0)
+frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
+
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1,0,0,30)
+title.BackgroundColor3 = Color3.fromRGB(10,10,10)
+title.Text = "faith'z scriptz"
+title.TextColor3 = Color3.new(1,1,1)
+title.Parent = frame
+
+local function makeButton(text,y)
+
+	local b = Instance.new("TextButton")
+	b.Size = UDim2.new(1,-10,0,30)
+	b.Position = UDim2.new(0,5,0,y)
+	b.BackgroundColor3 = Color3.fromRGB(50,50,50)
+	b.TextColor3 = Color3.new(1,1,1)
+	b.Text = text
+	b.Parent = frame
+
+	return b
+
+end
+
+local aimbotBtn = makeButton("Aimbot: OFF",40)
+local espBtn = makeButton("ESP: OFF",80)
+local autowinBtn = makeButton("TP to nearest player",120)
+
+-------------------------------------------------
+-- HELPER FUNCTIONS
+-------------------------------------------------
+
+local function getNearestPlayer()
+
+	local nearest
+	local dist = math.huge
+
+	local myChar = player.Character
+	if not myChar then return end
+
+	local myRoot = myChar:FindFirstChild("HumanoidRootPart")
+	if not myRoot then return end
+
+	for _,p in pairs(Players:GetPlayers()) do
+
+		if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+
+			local d = (p.Character.HumanoidRootPart.Position - myRoot.Position).Magnitude
+
+			if d < dist then
+				dist = d
+				nearest = p
+			end
+
+		end
+
+	end
+
+	return nearest
+
+end
+
+-------------------------------------------------
+-- AIMBOT
+-------------------------------------------------
+
+local function getClosestEnemy()
+
+	local closest
+	local dist = math.huge
+
+	for _,p in pairs(Players:GetPlayers()) do
+
+		if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+
+			local pos,visible = camera:WorldToViewportPoint(p.Character.HumanoidRootPart.Position)
+
+			if visible then
+
+				local d = (Vector2.new(pos.X,pos.Y) - Vector2.new(camera.ViewportSize.X/2,camera.ViewportSize.Y/2)).Magnitude
+
+				if d < dist then
+					dist = d
+					closest = p
+				end
+
+			end
+
+		end
+
+	end
+
+	return closest
+
+end
+
+RunService.RenderStepped:Connect(function()
+
+	if not aimbotEnabled then return end
+
+	local target = getClosestEnemy()
+
+	if target and target.Character then
+
+		local head = target.Character:FindFirstChild("Head")
+
+		if head then
+			camera.CFrame = CFrame.new(camera.CFrame.Position, head.Position)
+		end
+
+	end
+
+end)
+
+-------------------------------------------------
+-- ESP
+-------------------------------------------------
+
+local function updateESP()
+
+	for _,p in pairs(Players:GetPlayers()) do
+
+		if p ~= player and p.Character then
+
+			local existing = p.Character:FindFirstChild("FakeESP")
+
+			if espEnabled then
+
+				if not existing then
+
+					local h = Instance.new("Highlight")
+					h.Name = "FakeESP"
+					h.FillColor = Color3.fromRGB(255,0,0)
+					h.OutlineColor = Color3.fromRGB(255,255,255)
+					h.Parent = p.Character
+
+				end
+
+			else
+
+				if existing then
+					existing:Destroy()
+				end
+
+			end
+
+		end
+
+	end
+
+end
+
+task.spawn(function()
+
+	while true do
+		updateESP()
+		task.wait(1)
+	end
+
+end)
+
+-------------------------------------------------
+-- AUTO WIN
+-------------------------------------------------
+
+
+
+
+-------------------------------------------------
+-- BUTTONS
+-------------------------------------------------
+
+aimbotBtn.MouseButton1Click:Connect(function()
+
+	aimbotEnabled = not aimbotEnabled
+
+	if aimbotEnabled then
+		aimbotBtn.Text = "Aimbot: ON"
+	else
+		aimbotBtn.Text = "Aimbot: OFF"
+	end
+
+end)
+
+espBtn.MouseButton1Click:Connect(function()
+
+	espEnabled = not espEnabled
+
+	if espEnabled then
+		espBtn.Text = "ESP: ON"
+	else
+		espBtn.Text = "ESP: OFF"
+	end
+
+end)
+
+
+autowinBtn.MouseButton1Click:Connect(function()
+
+	local target = getNearestPlayer()
+	if not target then return end
+
+	local myChar = player.Character
+	local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+
+	local targetRoot = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
+
+	if myRoot and targetRoot then
+		myRoot.CFrame = targetRoot.CFrame * CFrame.new(0,0,2)
+	end
+
+end)
