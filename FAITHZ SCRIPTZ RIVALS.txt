@@ -7,6 +7,7 @@ local camera = workspace.CurrentCamera
 
 local aimbotEnabled = false
 local espEnabled = false
+local flyEnabled = false
 
 -------------------------------------------------
 -- GUI
@@ -18,7 +19,7 @@ gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0,200,0,160)
+frame.Size = UDim2.new(0,200,0,240)
 frame.Position = UDim2.new(0.1,0,0.2,0)
 frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
 frame.Active = true
@@ -49,6 +50,8 @@ end
 local aimbotBtn = makeButton("Aimbot: OFF",40)
 local espBtn = makeButton("ESP: OFF",80)
 local tpBtn = makeButton("TP to nearest player",120)
+local flyBtn = makeButton("Fly: OFF",160)
+local noclipBtn = makeButton("Noclip: OFF",200)
 
 -------------------------------------------------
 -- HELPER
@@ -200,6 +203,91 @@ local function teleportNearest()
 
 end
 
+
+-------------------------------------------------
+-- FLY
+-------------------------------------------------
+
+local bodyVelocity
+local bodyGyro
+
+local function fly()
+
+	local char = player.Character
+	if not char then return end
+
+	local root = char:FindFirstChild("HumanoidRootPart")
+	local humanoid = char:FindFirstChild("Humanoid")
+
+	if not root or not humanoid then return end
+
+	if flyEnabled then
+
+		humanoid.PlatformStand = true
+
+		bodyVelocity = Instance.new("BodyVelocity")
+		bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+		bodyVelocity.Velocity = Vector3.new(0,0,0)
+		bodyVelocity.Parent = root
+
+		bodyGyro = Instance.new("BodyGyro")
+		bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
+		bodyGyro.CFrame = workspace.CurrentCamera.CFrame
+		bodyGyro.Parent = root
+
+	else
+
+		if bodyVelocity then
+			bodyVelocity:Destroy()
+			bodyVelocity = nil
+		end
+
+		if bodyGyro then
+			bodyGyro:Destroy()
+			bodyGyro = nil
+		end
+
+		humanoid.PlatformStand = false
+
+	end
+
+end
+
+RunService.RenderStepped:Connect(function()
+
+	if not flyEnabled then return end
+	if not bodyVelocity then return end
+
+	local char = player.Character
+	if not char then return end
+
+	local humanoid = char:FindFirstChild("Humanoid")
+	if not humanoid then return end
+
+	local cam = workspace.CurrentCamera
+
+	bodyGyro.CFrame = cam.CFrame
+
+	local move = humanoid.MoveDirection
+	local forward = move:Dot(cam.CFrame.LookVector)
+	local right = move:Dot(cam.CFrame.RightVector)
+
+	bodyVelocity.Velocity =
+		(cam.CFrame.LookVector * forward +
+		cam.CFrame.RightVector * right) * 80
+
+end)
+
+-------------------------------------------------
+-- NOCLIP
+-------------------------------------------------
+local function noclip()
+for _,part in pairs(player.Character:GetDescendants()) do
+	if part:IsA("BasePart") then
+		part.CanCollide = false
+	end
+end
+end
 -------------------------------------------------
 -- TOGGLES
 -------------------------------------------------
@@ -218,6 +306,24 @@ local function toggleESP()
 
 end
 
+local function toggleFly()
+
+	flyEnabled = not flyEnabled
+	flyBtn.Text = "Fly: "..(flyEnabled and "ON" or "OFF")
+
+	fly()
+
+end
+
+local function toggleNoclip()
+
+	noclipEnabled = not noclipEnabled
+	noclipBtn.Text = "Noclip: "..(noclipEnabled and "ON" or "OFF")
+
+	noclip()
+
+end
+
 -------------------------------------------------
 -- BUTTONS
 -------------------------------------------------
@@ -225,6 +331,8 @@ end
 aimbotBtn.MouseButton1Click:Connect(toggleAimbot)
 espBtn.MouseButton1Click:Connect(toggleESP)
 tpBtn.MouseButton1Click:Connect(teleportNearest)
+flyBtn.MouseButton1Click:Connect(toggleFly)
+noclipBtn.MouseButton1Click:Connect(toggleNoclip)
 
 -------------------------------------------------
 -- KEYBINDS
@@ -249,6 +357,18 @@ UIS.InputBegan:Connect(function(input,gp)
 	if input.KeyCode == Enum.KeyCode.T then
 		if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.RightControl) then
 			teleportNearest()
+		end
+	end
+
+    if input.KeyCode == Enum.KeyCode.F then
+		if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.RightControl) then
+			toggleFly()
+		end
+	end
+
+    if input.KeyCode == Enum.KeyCode.N then
+		if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.RightControl) then
+			toggleNoclip()
 		end
 	end
 
