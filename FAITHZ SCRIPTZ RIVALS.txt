@@ -8,6 +8,7 @@ local camera = workspace.CurrentCamera
 local aimbotEnabled = false
 local espEnabled = false
 local flyEnabled = false
+local noclipEnabled = false
 
 -------------------------------------------------
 -- GUI
@@ -282,11 +283,22 @@ end)
 -- NOCLIP
 -------------------------------------------------
 local function noclip()
-for _,part in pairs(player.Character:GetDescendants()) do
-	if part:IsA("BasePart") then
-		part.CanCollide = false
-	end
-end
+
+	RunService.Stepped:Connect(function()
+
+		if not noclipEnabled then return end
+
+		local char = player.Character
+		if not char then return end
+
+		for _,part in pairs(char:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+			end
+		end
+
+	end)
+
 end
 -------------------------------------------------
 -- TOGGLES
@@ -320,7 +332,20 @@ local function toggleNoclip()
 	noclipEnabled = not noclipEnabled
 	noclipBtn.Text = "Noclip: "..(noclipEnabled and "ON" or "OFF")
 
-	noclip()
+	if noclipEnabled then
+		noclip()
+	else
+
+		local char = player.Character
+		if not char then return end
+
+		for _,part in pairs(char:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = true
+			end
+		end
+
+	end
 
 end
 
