@@ -20,7 +20,7 @@ gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0,200,0,280)
+frame.Size = UDim2.new(0,200,0,320)
 frame.Position = UDim2.new(0.1,0,0.2,0)
 frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
 frame.Active = true
@@ -54,6 +54,7 @@ local tpBtn = makeButton("TP to nearest player",120)
 local tpfBtn = makeButton("TP to farthest player",160)
 local flyBtn = makeButton("Fly: OFF",200)
 local noclipBtn = makeButton("Noclip: OFF",240)
+local invincibilityBtn = makeButton("Invincibility: OFF",280)
 
 -------------------------------------------------
 -- HELPER
