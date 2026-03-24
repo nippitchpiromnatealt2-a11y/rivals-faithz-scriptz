@@ -9,6 +9,7 @@ local aimbotEnabled = false
 local espEnabled = false
 local flyEnabled = false
 local noclipEnabled = false
+local autofarmEnabled = false
 
 -------------------------------------------------
 -- GUI
@@ -20,7 +21,7 @@ gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0,200,0,320)
+frame.Size = UDim2.new(0,200,0,360) -- fixed height
 frame.Position = UDim2.new(0.1,0,0.2,0)
 frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
 frame.Active = true
@@ -35,7 +36,6 @@ title.TextColor3 = Color3.new(1,1,1)
 title.Parent = frame
 
 local function makeButton(text,y)
-
 	local b = Instance.new("TextButton")
 	b.Size = UDim2.new(1,-10,0,30)
 	b.Position = UDim2.new(0,5,0,y)
@@ -43,9 +43,7 @@ local function makeButton(text,y)
 	b.TextColor3 = Color3.new(1,1,1)
 	b.Text = text
 	b.Parent = frame
-
 	return b
-
 end
 
 local aimbotBtn = makeButton("Aimbot: OFF",40)
@@ -54,14 +52,14 @@ local tpBtn = makeButton("TP to nearest player",120)
 local tpfBtn = makeButton("TP to farthest player",160)
 local flyBtn = makeButton("Fly: OFF",200)
 local noclipBtn = makeButton("Noclip: OFF",240)
-local invincibilityBtn = makeButton("Invincibility: OFF",280)
+local autofarmBtn = makeButton("Auto Farm: OFF",280)
+local invincibilityBtn = makeButton("Invincibility: OFF",320)
 
 -------------------------------------------------
--- HELPER
+-- HELPERS
 -------------------------------------------------
 
 local function getNearestPlayer()
-
 	local nearest
 	local dist = math.huge
 
@@ -72,26 +70,19 @@ local function getNearestPlayer()
 	if not root then return end
 
 	for _,p in pairs(Players:GetPlayers()) do
-
 		if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-
 			local d = (p.Character.HumanoidRootPart.Position - root.Position).Magnitude
-
 			if d < dist then
 				dist = d
 				nearest = p
 			end
-
 		end
-
 	end
 
 	return nearest
-
 end
 
 local function getFarthestPlayer()
-
 	local farthest
 	local dist = 0
 
@@ -102,73 +93,52 @@ local function getFarthestPlayer()
 	if not root then return end
 
 	for _,p in pairs(Players:GetPlayers()) do
-
 		if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-
 			local d = (p.Character.HumanoidRootPart.Position - root.Position).Magnitude
-
 			if d > dist then
 				dist = d
 				farthest = p
 			end
-
 		end
-
 	end
 
 	return farthest
-
 end
+
 -------------------------------------------------
 -- AIMBOT
 -------------------------------------------------
 
 local function getClosestEnemy()
-
 	local closest
 	local dist = math.huge
 
 	for _,p in pairs(Players:GetPlayers()) do
-
 		if p ~= player and p.Character and p.Character:FindFirstChild("Head") then
-
 			local pos,visible = camera:WorldToViewportPoint(p.Character.Head.Position)
-
 			if visible then
-
 				local d = (Vector2.new(pos.X,pos.Y) - Vector2.new(camera.ViewportSize.X/2,camera.ViewportSize.Y/2)).Magnitude
-
 				if d < dist then
 					dist = d
 					closest = p
 				end
-
 			end
-
 		end
-
 	end
 
 	return closest
-
 end
 
 RunService.RenderStepped:Connect(function()
-
 	if not aimbotEnabled then return end
 
 	local target = getClosestEnemy()
-
 	if target and target.Character then
-
 		local head = target.Character:FindFirstChild("Head")
-
 		if head then
 			camera.CFrame = CFrame.new(camera.CFrame.Position, head.Position)
 		end
-
 	end
-
 end)
 
 -------------------------------------------------
@@ -176,7 +146,6 @@ end)
 -------------------------------------------------
 
 local function applyESP(char)
-
 	if char:FindFirstChild("FakeESP") then return end
 
 	local highlight = Instance.new("Highlight")
@@ -184,75 +153,51 @@ local function applyESP(char)
 	highlight.FillColor = Color3.fromRGB(255,0,0)
 	highlight.OutlineColor = Color3.fromRGB(255,255,255)
 	highlight.Parent = char
-
 end
 
 local function removeESP(char)
-
 	local h = char:FindFirstChild("FakeESP")
-
-	if h then
-		h:Destroy()
-	end
-
+	if h then h:Destroy() end
 end
 
 RunService.RenderStepped:Connect(function()
-
 	for _,p in pairs(Players:GetPlayers()) do
-
 		if p ~= player and p.Character then
-
 			if espEnabled then
 				applyESP(p.Character)
 			else
 				removeESP(p.Character)
 			end
-
 		end
-
 	end
-
 end)
 
 -------------------------------------------------
--- TELEPORT NEAREST
+-- TELEPORT
 -------------------------------------------------
 
 local function teleportNearest()
-
 	local target = getNearestPlayer()
 	if not target then return end
 
-	local myChar = player.Character
-	local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
-
+	local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	local targetRoot = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
 
 	if myRoot and targetRoot then
 		myRoot.CFrame = targetRoot.CFrame * CFrame.new(0,0,2)
 	end
-
 end
 
--------------------------------------------------
--- TELEPORT FURTHEST
--------------------------------------------------
-
 local function teleportFarthest()
-
 	local target = getFarthestPlayer()
 	if not target then return end
 
-	local myChar = player.Character
-	local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
-
+	local myRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
 	local targetRoot = target.Character and target.Character:FindFirstChild("HumanoidRootPart")
 
 	if myRoot and targetRoot then
 		myRoot.CFrame = targetRoot.CFrame * CFrame.new(0,0,2)
 	end
-
 end
 
 -------------------------------------------------
@@ -263,79 +208,54 @@ local bodyVelocity
 local bodyGyro
 
 local function fly()
-
 	local char = player.Character
 	if not char then return end
 
 	local root = char:FindFirstChild("HumanoidRootPart")
 	local humanoid = char:FindFirstChild("Humanoid")
-
 	if not root or not humanoid then return end
 
 	if flyEnabled then
-
 		humanoid.PlatformStand = true
 
 		bodyVelocity = Instance.new("BodyVelocity")
 		bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
-		bodyVelocity.Velocity = Vector3.new(0,0,0)
 		bodyVelocity.Parent = root
 
 		bodyGyro = Instance.new("BodyGyro")
 		bodyGyro.MaxTorque = Vector3.new(math.huge, math.huge, math.huge)
-		bodyGyro.CFrame = workspace.CurrentCamera.CFrame
 		bodyGyro.Parent = root
-
 	else
-
-		if bodyVelocity then
-			bodyVelocity:Destroy()
-			bodyVelocity = nil
-		end
-
-		if bodyGyro then
-			bodyGyro:Destroy()
-			bodyGyro = nil
-		end
-
+		if bodyVelocity then bodyVelocity:Destroy() end
+		if bodyGyro then bodyGyro:Destroy() end
 		humanoid.PlatformStand = false
-
 	end
-
 end
 
 RunService.RenderStepped:Connect(function()
-
-	if not flyEnabled then return end
-	if not bodyVelocity then return end
+	if not flyEnabled or not bodyVelocity then return end
 
 	local char = player.Character
-	if not char then return end
-
-	local humanoid = char:FindFirstChild("Humanoid")
+	local humanoid = char and char:FindFirstChild("Humanoid")
 	if not humanoid then return end
 
 	local cam = workspace.CurrentCamera
-
 	bodyGyro.CFrame = cam.CFrame
 
 	local move = humanoid.MoveDirection
-	local forward = move:Dot(cam.CFrame.LookVector)
-	local right = move:Dot(cam.CFrame.RightVector)
-
 	bodyVelocity.Velocity =
-		(cam.CFrame.LookVector * forward +
-		cam.CFrame.RightVector * right) * 80
-
+		(cam.CFrame.LookVector * move:Dot(cam.CFrame.LookVector) +
+		cam.CFrame.RightVector * move:Dot(cam.CFrame.RightVector)) * 80
 end)
 
 -------------------------------------------------
--- NOCLIP
+-- NOCLIP (FIXED)
 -------------------------------------------------
+
+local noclipConnection
+
 local function noclip()
-
-	RunService.Stepped:Connect(function()
-
+	noclipConnection = RunService.Stepped:Connect(function()
 		if not noclipEnabled then return end
 
 		local char = player.Character
@@ -346,57 +266,146 @@ local function noclip()
 				part.CanCollide = false
 			end
 		end
-
 	end)
-
 end
+
+
+-------------------------------------------------
+-- AUTOFARM (CLICK-TO-ACTIVATE)
+-------------------------------------------------
+
+local autoFarmLoop
+local MAX_DISTANCE = 60
+local SMOOTHNESS = 0.2
+
+local isClicking = false
+
+local function isAlive(char)
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	return hum and hum.Health > 0
+end
+
+-- detect mouse click
+UIS.InputBegan:Connect(function(input, gp)
+	if gp then return end
+
+	if input.UserInputType == Enum.UserInputType.MouseButton1 
+	or input.UserInputType == Enum.UserInputType.MouseButton2 then
+		isClicking = true
+	end
+end)
+
+UIS.InputEnded:Connect(function(input, gp)
+	if gp then return end
+
+	if input.UserInputType == Enum.UserInputType.MouseButton1 
+	or input.UserInputType == Enum.UserInputType.MouseButton2 then
+		isClicking = false
+	end
+end)
+
+local function toggleAutoFarm()
+	autofarmEnabled = not autofarmEnabled
+
+	if autofarmEnabled then
+
+		autoFarmLoop = RunService.RenderStepped:Connect(function()
+
+			-- 🖱️ REQUIRE CLICK
+			if not isClicking then
+				autofarmBtn.Text = "Auto Farm: ON (Click to chase)"
+				return
+			end
+
+			local target = getNearestPlayer()
+			if not target then
+				autofarmBtn.Text = "Auto Farm: ON (No Target)"
+				return
+			end
+
+			local myChar = player.Character
+			local myRoot = myChar and myChar:FindFirstChild("HumanoidRootPart")
+
+			local targetChar = target.Character
+			local targetRoot = targetChar and targetChar:FindFirstChild("HumanoidRootPart")
+
+			if not (myRoot and targetRoot) then return end
+
+			-- 🧠 ALIVE CHECK
+			if not isAlive(targetChar) then
+				autofarmBtn.Text = "Auto Farm: ON (Dead)"
+				return
+			end
+
+			local dist = (targetRoot.Position - myRoot.Position).Magnitude
+
+			-- 📏 DISTANCE CHECK
+			if dist > MAX_DISTANCE then
+				autofarmBtn.Text = "Auto Farm: ON (Too Far)"
+				return
+			end
+
+			-- ⚡ SMOOTH FOLLOW
+			local targetCF = targetRoot.CFrame * CFrame.new(0,0,3)
+			myRoot.CFrame = myRoot.CFrame:Lerp(targetCF, SMOOTHNESS)
+
+			autofarmBtn.Text = "Auto Farm: ON (Attacking)"
+
+		end)
+
+		autofarmBtn.Text = "Auto Farm: ON"
+
+	else
+		if autoFarmLoop then
+			autoFarmLoop:Disconnect()
+			autoFarmLoop = nil
+		end
+
+		autofarmBtn.Text = "Auto Farm: OFF"
+	end
+end
+
 -------------------------------------------------
 -- TOGGLES
 -------------------------------------------------
 
 local function toggleAimbot()
-
 	aimbotEnabled = not aimbotEnabled
 	aimbotBtn.Text = "Aimbot: "..(aimbotEnabled and "ON" or "OFF")
-
 end
 
 local function toggleESP()
-
 	espEnabled = not espEnabled
 	espBtn.Text = "ESP: "..(espEnabled and "ON" or "OFF")
-
 end
 
 local function toggleFly()
-
 	flyEnabled = not flyEnabled
 	flyBtn.Text = "Fly: "..(flyEnabled and "ON" or "OFF")
-
 	fly()
-
 end
 
 local function toggleNoclip()
-
 	noclipEnabled = not noclipEnabled
 	noclipBtn.Text = "Noclip: "..(noclipEnabled and "ON" or "OFF")
 
 	if noclipEnabled then
 		noclip()
 	else
-
-		local char = player.Character
-		if not char then return end
-
-		for _,part in pairs(char:GetDescendants()) do
-			if part:IsA("BasePart") then
-				part.CanCollide = true
-			end
+		if noclipConnection then
+			noclipConnection:Disconnect()
+			noclipConnection = nil
 		end
 
+		local char = player.Character
+		if char then
+			for _,part in pairs(char:GetDescendants()) do
+				if part:IsA("BasePart") then
+					part.CanCollide = true
+				end
+			end
+		end
 	end
-
 end
 
 -------------------------------------------------
@@ -409,43 +418,30 @@ tpBtn.MouseButton1Click:Connect(teleportNearest)
 tpfBtn.MouseButton1Click:Connect(teleportFarthest)
 flyBtn.MouseButton1Click:Connect(toggleFly)
 noclipBtn.MouseButton1Click:Connect(toggleNoclip)
+autofarmBtn.MouseButton1Click:Connect(toggleAutoFarm)
 
 -------------------------------------------------
--- KEYBINDS
+-- KEYBINDS (FIXED)
 -------------------------------------------------
 
 UIS.InputBegan:Connect(function(input,gp)
-
 	if gp then return end
 
-	if input.KeyCode == Enum.KeyCode.A then
-		if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.RightControl) then
+	if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.RightControl) then
+
+		if input.KeyCode == Enum.KeyCode.A then
 			toggleAimbot()
-		end
-	end
-
-	if input.KeyCode == Enum.KeyCode.E then
-		if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.RightControl) then
+		elseif input.KeyCode == Enum.KeyCode.E then
 			toggleESP()
-		end
-	end
-
-	if input.KeyCode == Enum.KeyCode.T then
-		if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.RightControl) then
+		elseif input.KeyCode == Enum.KeyCode.T then
 			teleportNearest()
-		end
-	end
-
-    if input.KeyCode == Enum.KeyCode.F then
-		if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.RightControl) then
+		elseif input.KeyCode == Enum.KeyCode.F then
 			toggleFly()
-		end
-	end
-
-    if input.KeyCode == Enum.KeyCode.N then
-		if UIS:IsKeyDown(Enum.KeyCode.LeftControl) or UIS:IsKeyDown(Enum.KeyCode.RightControl) then
+		elseif input.KeyCode == Enum.KeyCode.N then
 			toggleNoclip()
+		elseif input.KeyCode == Enum.KeyCode.R then -- changed key
+			toggleAutoFarm()
 		end
-	end
 
+	end
 end)
